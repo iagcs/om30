@@ -2,6 +2,7 @@
 
 namespace Modules\Patient\app\Services;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Modules\Patient\app\DTO\AddressData;
 use Modules\Patient\app\Models\Address;
@@ -37,15 +38,17 @@ class AddressService
 
     public function searchByCep(string $cep): AddressData
     {
-        $response = Http::get('https://viacep.com.br/ws/'.$cep.'/json/')->json();
+        return Cache::remember('cep_' . $cep, now()->addDay(), function () use ($cep) {
+            $response = Http::get('https://viacep.com.br/ws/'.$cep.'/json/')->json();
 
-        return AddressData::from([
-            'cep'        => $response['cep'],
-            'address'    => $response['logradouro'],
-            'complement' => $response['complemento'],
-            'neighbour'  => $response['bairro'],
-            'city'       => $response['localidade'],
-            'state'      => $response['uf'],
-        ]);
+            return AddressData::from([
+                'cep'        => $response['cep'],
+                'address'    => $response['logradouro'],
+                'complement' => $response['complemento'],
+                'neighbour'  => $response['bairro'],
+                'city'       => $response['localidade'],
+                'state'      => $response['uf'],
+            ]);
+        });
     }
 }
